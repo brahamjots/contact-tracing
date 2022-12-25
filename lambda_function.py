@@ -22,8 +22,7 @@ def find_locations_visited(locations, person_name, date):
     for location in locations:
         for person in location["persons"]:
             if person_name == person['person'] and date in person['dates']:
-                temp_variable = location['location']
-                locations_visited.append(temp_variable)
+                locations_visited.append(location['location'])
 
     if len(locations_visited) > 0:
         return f"{person_name} visited the following locations on {date}: {locations_visited}"
@@ -35,16 +34,23 @@ def find_close_contacts(locations, person_name, date):
     """Given a specific PERSON and date, identify their CLOSE CONTACTS on that date."""
     close_contacts = []
     for location in locations:
+        person_present_at_location = False
+        
         for person in location["persons"]:
-            if person_name != person['person']:
-                if date in person['dates']:
-                    close_contacts.append(person['person'])
-    close_contacts = list(dict.fromkeys(close_contacts))
+            if person['person'] == person_name and date in person['dates']:
+                    person_present_at_location = True
+                    break
+
+        if person_present_at_location:
+            for person in location["persons"]:
+                if person['person'] != person_name and date in person['dates']:
+                        close_contacts.append(person['person'])
+
     if len(close_contacts) > 0:
         return f"{person_name}'s close contacts on {date}: {close_contacts}"
     else:
         return f"{person_name} had no close contacts on {date}"
-    
+
     
 def lambda_handler(event, context):
     # Open the file
@@ -54,15 +60,18 @@ def lambda_handler(event, context):
             data = json.load(f)
     except FileNotFoundError:
         return {
+            'statusCode': 500,
             'body': "Error: data.json file not found" 
         }
     except json.JSONDecodeError:
         return {
+            'statusCode': 400,
             'body': "Error: Invalid JSON format in data.json file"
         }
     
     if not data:
         return {
+            'statusCode': 500,
             'body': "Error: data.json file is empty"
         }
     
@@ -71,10 +80,21 @@ def lambda_handler(event, context):
     # Get the location and persons data from the JSON object
     for data_entry in data:
         locations.append(data_entry)
-    
-    if event['body'] is not None:
-        body = json.loads(event['body'])
         
+    if event['body'] is not None:
+        try:
+            body = json.loads(event['body'])
+        except json.JSONDecodeError:
+            return {
+                'statusCode': 400,
+                'body': "Error: Invalid JSON format in input"
+            }
+        
+    else:
+        return {
+            'statusCode': 422,
+            'body': "Error: No arguments provided."
+        }
     person_name = body.get('person')
     date = body.get('date')
     location_name = body.get('location')
@@ -98,6 +118,7 @@ def lambda_handler(event, context):
             'body': "Error: date argument is required"
         }
     
+
     if not person_name and not location_name:
         return {
             'statusCode': 422,
@@ -119,12 +140,7 @@ def lambda_handler(event, context):
     else:
         # If no input is provided, print an error message
         result = "Check input and retry."
-    
-    print(result)
-    return {
-        'statusCode': 200,
-        'body' : result
-    }
+   
     if result:
         return {
             'statusCode': 200,
@@ -135,4 +151,3 @@ def lambda_handler(event, context):
             'statusCode': 200,
             'body': "No data found for the specified input"
         }
-

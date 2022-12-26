@@ -13,6 +13,12 @@ Instructions:
 - Use GET method 
 - The payload goes inside 'Body' in json format
 - The key value pairs go inside curly braces {}
+- Example of valid input data:
+{
+"person": "brandon \"bran\" stark",
+"date": "2021-02-04T00:00:00.000Z",
+"method": "find_close_contacts"
+}
 
 Non-optional arguments in payload:
 1. Date

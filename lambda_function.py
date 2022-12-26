@@ -52,12 +52,14 @@ def find_close_contacts(locations, person_name, date):
     else:
         return f"{person_name} had no close contacts on {date}"
 
+
 def is_valid_date(date_string):
     try:
         datetime.strptime(date_string, '%Y-%m-%dT%H:%M:%S.%f%z')
         return True
     except ValueError:
         return False
+    
     
 def lambda_handler(event, context):
     # Open the file

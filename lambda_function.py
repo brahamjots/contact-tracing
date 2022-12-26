@@ -1,11 +1,12 @@
 import json
+from datetime import datetime
 
         
 def find_persons_at_location(locations, location_name, date):
     """Find every PERSON that has visited a particular LOCATION on a particular date."""
     persons_at_location = []
     for location in locations:
-        if location_name == location['location']:
+        if location_name.lower() == location['location'].lower():
             for person in location['persons']:
                 if date in person['dates']:
                     persons_at_location.append(person['person'])
@@ -21,7 +22,7 @@ def find_locations_visited(locations, person_name, date):
     locations_visited = []
     for location in locations:
         for person in location["persons"]:
-            if person_name == person['person'] and date in person['dates']:
+            if person_name.lower() == person['person'].lower() and date in person['dates']:
                 locations_visited.append(location['location'])
 
     if len(locations_visited) > 0:
@@ -37,13 +38,13 @@ def find_close_contacts(locations, person_name, date):
         person_present_at_location = False
         
         for person in location["persons"]:
-            if person['person'] == person_name and date in person['dates']:
+            if person['person'].lower() == person_name.lower() and date in person['dates']:
                     person_present_at_location = True
                     break
 
         if person_present_at_location:
             for person in location["persons"]:
-                if person['person'] != person_name and date in person['dates']:
+                if person['person'].lower() != person_name.lower() and date in person['dates']:
                         close_contacts.append(person['person'])
 
     if len(close_contacts) > 0:
@@ -51,6 +52,12 @@ def find_close_contacts(locations, person_name, date):
     else:
         return f"{person_name} had no close contacts on {date}"
 
+def is_valid_date(date_string):
+    try:
+        datetime.strptime(date_string, '%Y-%m-%dT%H:%M:%S.%f%z')
+        return True
+    except ValueError:
+        return False
     
 def lambda_handler(event, context):
     # Open the file
@@ -96,7 +103,15 @@ def lambda_handler(event, context):
             'body': "Error: No arguments provided."
         }
     person_name = body.get('person')
+    
     date = body.get('date')
+    if not is_valid_date(date):
+        # Handle invalid date input
+        return {
+                'statusCode': 422,
+                'body': "Error: date format is invalid"
+            }
+    
     location_name = body.get('location')
     method = body.get('method')
     
